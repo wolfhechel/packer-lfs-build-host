@@ -5,22 +5,28 @@ TARGET=/mnt
 
 ## Partitioning
 DISK="/dev/sda"
-ROOT_PART="${DISK}1"
+BOOT_PART="${DISK}1"
 SWAP_PART="${DISK}2"
+ROOT_PART="${DISK}3"
 
 sfdisk ${DISK} << EOF
 unit: sectors
 
-${ROOT_PART} : start=     2048, size= 18874368, Id=83
-${SWAP_PART} : start= 18876416, size=  2095104, Id=82
-/dev/sda3    : start=        0, size=        0, Id= 0
-/dev/sda4    : start=        0, size=        0, Id= 0
+${BOOT_PART}: start=     2048, size=   262144, Id=83
+${SWAP_PART}: start=   264192, size=  2097152, Id=82
+${ROOT_PART}: start=  2361344, size= 18610176, Id=83
 EOF
-
+# Root partition creation and initialization
 mkfs.ext4 -jvF -m 0 ${ROOT_PART}
-mkswap ${SWAP_PART}
-
 mount -o noatime,errors=remount-ro ${ROOT_PART} ${TARGET}
+
+# Boot partition creation and initialization
+mkdir ${TARGET}/boot
+mkfs.ext2 -v ${BOOT_PART}
+mount -o noexec,noatime ${BOOT_PART} ${TARGET}/boot
+
+# Create swap and swap on
+mkswap ${SWAP_PART}
 swapon ${SWAP_PART}
 
 ## Bootstrapping
