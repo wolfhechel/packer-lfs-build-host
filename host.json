@@ -1,0 +1,58 @@
+{
+  "variables": {
+        "iso_url": "http://ftp.availo.se/archlinux/iso/2014.04.01/archlinux-2014.04.01-dual.iso",
+        "iso_checksum": "b7d7d124bc4f82d1df55c17029def67dfa0e5e64",
+        "ssh_pass": "root",
+        "name": "natale-build-host"
+  },
+
+  "builders": [
+  {
+      "name": "{{user `name`}}",
+      "type": "virtualbox-iso",
+      "guest_os_type": "ArchLinux_64",
+      "disk_size": "10240",
+      "guest_additions_mode": "disable",
+      "hard_drive_interface": "sata",
+      "vboxmanage": [
+        [
+          "createhd",
+          "--filename", "output-{{user `name`}}/{{.Name}}-sdb.vdi",
+          "--size", "20480"
+        ],
+        [
+          "storageattach",
+          "{{.Name}}",
+          "--storagectl", "SATA Controller",
+          "--port", "3",
+          "--type", "hdd",
+          "--medium", "output-{{user `name`}}/{{.Name}}-sdb.vdi"
+        ]
+      ],
+      "ssh_username": "root",
+      "ssh_password": "{{user `ssh_pass`}}",
+      "iso_urls": [
+        "{{user `iso_url`}}"
+      ],
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "sha1",
+      "boot_wait": "5s",
+      "boot_command": [
+        "<enter>",
+        "<wait10><wait5>",
+        "systemctl start sshd<enter>",
+        "usermod --password $(openssl passwd -crypt {{user `ssh_pass`}}) root<enter>",
+        "<wait>"
+      ]
+    }
+  ],
+
+  "provisioners": [
+    {
+      "type": "shell",
+      "scripts": [
+        "provisioning/install-host.sh"
+      ]
+    }
+  ]
+}
