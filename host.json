@@ -2,8 +2,21 @@
   "variables": {
         "iso_url": "http://ftp.availo.se/archlinux/iso/2014.04.01/archlinux-2014.04.01-dual.iso",
         "iso_checksum": "b7d7d124bc4f82d1df55c17029def67dfa0e5e64",
-        "ssh_pass": "root",
-        "name": "natale-build-host"
+        "name": "build-host",
+
+        "ram": 1024,
+        "cpus": 1,
+        "sda_size": 10240,
+        "sdb_size": 20480,
+
+        "timezone": "UTC",
+        "language": "en_US.UTF-8",
+        "keymap": "sv-latin1",
+        "build_user": "lfs",
+        "build_dir": "/mnt/lfs",
+
+        "_target_dir": "/mnt",
+        "_ssh_pass": "root"
   },
 
   "builders": [
@@ -11,14 +24,23 @@
       "name": "{{user `name`}}",
       "type": "virtualbox-iso",
       "guest_os_type": "ArchLinux_64",
-      "disk_size": "10240",
+      "disk_size": "{{user `sda_size`}}",
       "guest_additions_mode": "disable",
       "hard_drive_interface": "sata",
+      "shutdown_command": "umount -r {{user `_target_dir`}}; poweroff",
       "vboxmanage": [
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--cpus",
+          "{{user `cpus`}}",
+          "--memory",
+          "{{user `ram`}}"
+        ],
         [
           "createhd",
           "--filename", "output-{{user `name`}}/{{.Name}}-sdb.vdi",
-          "--size", "20480"
+          "--size", "{{user `sdb_size`}}"
         ],
         [
           "storageattach",
@@ -30,7 +52,7 @@
         ]
       ],
       "ssh_username": "root",
-      "ssh_password": "{{user `ssh_pass`}}",
+      "ssh_password": "{{user `_ssh_pass`}}",
       "iso_urls": [
         "{{user `iso_url`}}"
       ],
@@ -41,7 +63,7 @@
         "<enter>",
         "<wait10><wait5>",
         "systemctl start sshd<enter>",
-        "usermod --password $(openssl passwd -crypt {{user `ssh_pass`}}) root<enter>",
+        "usermod --password $(openssl passwd -crypt {{user `_ssh_pass`}}) root<enter>",
         "<wait>"
       ]
     }
@@ -50,8 +72,27 @@
   "provisioners": [
     {
       "type": "shell",
+      "environment_vars": [
+        "TARGET_DIR='{{user `_target_dir`}}'",
+        "BUILD_DIR='{{user `build_dir`}}'"
+      ],
       "scripts": [
-        "provisioning/install-host.sh"
+        "provisioning/bootstrap.sh"
+      ]
+    },
+    {
+      "type": "shell",
+      "remote_path": "/config.sh",
+      "execute_command": "chmod +x {{ .Path }}; cp {{ .Path }} {{user `_target_dir`}}; {{ .Vars }} /usr/bin/arch-chroot {{user `_target_dir`}} {{ .Path }}; rm {{user `_target_dir`}}{{ .Path }}",
+      "environment_vars": [
+        "BUILD_DIR='{{user `build_dir`}}'",
+        "TIMEZONE={{user `timezone`}}",
+        "LANGUAGE={{user `language`}}",
+        "KEYMAP={{user `keymap`}}",
+        "BUILD_USER={{user `build_user`}}"
+      ],
+      "scripts": [
+        "provisioning/system-configuration.sh"
       ]
     }
   ]
