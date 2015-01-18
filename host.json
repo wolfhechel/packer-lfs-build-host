@@ -1,13 +1,13 @@
 {
   "variables": {
-        "iso_url": "http://ftp.availo.se/archlinux/iso/2014.04.01/archlinux-2014.04.01-dual.iso",
-        "iso_checksum": "b7d7d124bc4f82d1df55c17029def67dfa0e5e64",
+        "iso_arch_mirror": "ftp.lysator.liu.se/pub/archlinux",
+        "iso_arch_release": "2015.01.01",
+        "iso_checksum": "a8344dde2e9a22e6a66d10ee016818c1491a9054",
         "name": "build-host",
 
         "ram": 1024,
         "cpus": 1,
         "sda_size": 10240,
-        "sdb_size": 20480,
 
         "timezone": "UTC",
         "language": "en_US.UTF-8",
@@ -36,25 +36,12 @@
           "{{user `cpus`}}",
           "--memory",
           "{{user `ram`}}"
-        ],
-        [
-          "createhd",
-          "--filename", "output-{{user `name`}}/{{.Name}}-sdb.vdi",
-          "--size", "{{user `sdb_size`}}"
-        ],
-        [
-          "storageattach",
-          "{{.Name}}",
-          "--storagectl", "SATA Controller",
-          "--port", "3",
-          "--type", "hdd",
-          "--medium", "output-{{user `name`}}/{{.Name}}-sdb.vdi"
         ]
       ],
       "ssh_username": "root",
       "ssh_password": "{{user `_ssh_pass`}}",
       "iso_urls": [
-        "{{user `iso_url`}}"
+        "http://{{user `iso_arch_mirror`}}/iso/{{user `iso_arch_release`}}/archlinux-{{user `iso_arch_release`}}-dual.iso"
       ],
       "iso_checksum": "{{user `iso_checksum`}}",
       "iso_checksum_type": "sha1",
